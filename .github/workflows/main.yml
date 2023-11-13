@@ -1,8 +1,9 @@
 name: Main Workflow
-on:
-  push:
-    paths:
-      - 'docker-compose.yml'
+on: [push]
+#on:
+#  push:
+#    paths:
+#      - 'docker-compose.yml'
 env:
   #pushの度に適切な値に更新
   pull_image : nginx:latest
