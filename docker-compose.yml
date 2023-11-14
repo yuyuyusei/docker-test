@@ -4,7 +4,11 @@ services:
    db:
      image: mysql:5.7
      volumes:
-       - db-data:/var/lib/mysql
+       - type: volume
+         source: azure-fileshare
+         target: /var/lib/mysql
+         volume:
+           nocopy: true
      restart: always
      environment:
        MYSQL_ROOT_PASSWORD: somewordpress
@@ -24,10 +28,10 @@ services:
         WORDPRESS_DB_USER: wordpress
         WORDPRESS_DB_PASSWORD: wordpress
 volumes:
-    db-data:
-      driver: azure_file
-      driver_opts:
-        share_name: container-fileshare
-        storage_account_name: odacontainerstorage
+  azure-fileshare:
+    driver: azure_file
+    driver_opts:
+      share_name: container-fileshare
+      storage_account_name: odacontainerstorage
 
 
