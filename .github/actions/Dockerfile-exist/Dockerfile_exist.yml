@@ -1,0 +1,38 @@
+name: Exist Workflow
+description: "Dockerfile exist Action"
+inputs:
+  image_name:
+    required: true
+    type: string
+  acr_name:
+    required: true
+    type: string
+  registry_login_server:
+    required: true
+    type: string
+  registry_username:
+    required: true
+    type: string
+  registry_password:
+    required: true
+    type: string
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@main
+
+    # ACRにログイン, イメージのビルドとプッシュ
+    - name: 'ACR to login, Build and push image'
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ inputs.registry_login_server }}
+        username: ${{ inputs.registry_username }}
+        password: ${{ inputs.registry_password }}
+    - run: |
+        az acr build -r ${{ inputs.acr_name }} -t ${{ inputs.image_name }} $GITHUB_WORKSPACE
+      shell: bash
+      
+

@@ -1,0 +1,37 @@
+name: Not Exist Workflow
+description: "Dockerfile not exist Action"
+inputs:
+  pull_image:
+    required: true
+    type: string
+  image_name:
+    required: true
+    type: string
+  registry_login_server:
+    required: true
+    type: string
+  registry_username:
+    required: true
+    type: string
+  registry_password:
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@main
+
+    # ACRにログイン, イメージのプルとプッシュ
+    - name: 'ACR to login, Pull and push image'
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ inputs.registry_login_server }}
+        username: ${{ inputs.registry_username }}
+        password: ${{ inputs.registry_password }}
+    - run: |
+        docker pull ${{ inputs.pull_image }}
+        docker tag ${{ inputs.pull_image }} ${{ inputs.registry_login_server }}/${{ inputs.image_name }}
+        docker push ${{ inputs.registry_login_server }}/${{ inputs.image_name }}
+      shell: bash
