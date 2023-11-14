@@ -4,7 +4,13 @@ inputs:
   pull_image:
     required: true
     type: string
+  pull_image_2:
+    required: true
+    type: string
   image_name:
+    required: true
+    type: string
+  image_name_2:
     required: true
     type: string
   registry_login_server:
@@ -32,6 +38,11 @@ runs:
         password: ${{ inputs.registry_password }}
     - run: |
         docker pull ${{ inputs.pull_image }}
+        docker pull ${{ inputs.pull_image_2 }}
         docker tag ${{ inputs.pull_image }} ${{ inputs.registry_login_server }}/${{ inputs.image_name }}
+        docker tag ${{ inputs.pull_image_2 }} ${{ inputs.registry_login_server }}/${{ inputs.image_name_2 }}
         docker push ${{ inputs.registry_login_server }}/${{ inputs.image_name }}
+        docker push ${{ inputs.registry_login_server }}/${{ inputs.image_name_2 }}
+
       shell: bash
+
