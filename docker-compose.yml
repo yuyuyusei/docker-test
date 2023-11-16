@@ -7,8 +7,6 @@ services:
        - type: volume
          source: azure-fileshare
          target: /var/lib/mysql
-         volume:
-           nocopy: true
      restart: always
      environment:
        MYSQL_ROOT_PASSWORD: somewordpress
