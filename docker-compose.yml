@@ -4,9 +4,7 @@ services:
    db:
      image: mysql:5.7
      volumes:
-       - type: volume
-         source: azure-fileshare
-         target: /var/lib/mysql
+       - azure-fileshare:/var/lib/mysql
      restart: always
      environment:
        MYSQL_ROOT_PASSWORD: somewordpress
