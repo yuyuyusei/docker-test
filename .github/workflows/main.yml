@@ -65,3 +65,15 @@ jobs:
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
         name: ${{ env.aci_name }}
         location: 'japanwest'
+
+    - name: 'Deploy to Azure Container Instances'
+      uses: 'azure/aci-deploy@v1.1.3'
+      with:
+        resource-group: ${{ secrets.RESOURCE_GROUP }}
+        dns-name-label: ${{ env.dns_name }}
+        image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.image_name }}
+        registry-login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+        registry-username: ${{ secrets.REGISTRY_USERNAME }}
+        registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+        name: ${{ env.aci_name }}
+        location: 'japanwest'
