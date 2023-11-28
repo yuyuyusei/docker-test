@@ -1,18 +1,16 @@
-version: '3'
-
+version: '3.3'
 services:
-   db:
-     image: mysql:5.7
-     volumes:
-       - azure-fileshare:/var/lib/mysql
-     restart: always
-     environment:
-       MYSQL_ROOT_PASSWORD: somewordpress
-       MYSQL_DATABASE: wordpress
-       MYSQL_USER: wordpress
-       MYSQL_PASSWORD: wordpress
+  db:
+    image: mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: somewordpress
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
 
-   wordpress:
+  wordpress:
       depends_on:
         - db
       image: wordpress:latest
@@ -24,10 +22,4 @@ services:
         WORDPRESS_DB_USER: wordpress
         WORDPRESS_DB_PASSWORD: wordpress
 volumes:
-  azure-fileshare:
-    driver: azure_file
-    driver_opts:
-      share_name: container-fileshare
-      storage_account_name: odacontainerstorage
-
-
+  db_data:
