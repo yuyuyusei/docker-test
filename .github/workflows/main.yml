@@ -4,6 +4,8 @@ env:
   #pushの度に適切な値に更新
   db_image_name: mysql:5.7 
   aci_db_name: wordpressdb
+  app_image_name: wordpress:latest
+  aci_app_name: wordpressapp
   
 jobs:
   build-and-deploy:
@@ -18,20 +20,72 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
-
+        
+    # Azure CLIをインストール
+    - name: Install Azure CLI
+      run: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
       
-    - name: Deploy DB Container to ACI
-      uses: azure/aci-deploy@v1.1.3
-      with:
-        resource-group: ${{ secrets.RESOURCE_GROUP }}
-        name: ${{ env.aci_db_name }}
-        image: ${{ env.db_image_name }}
-        vnet-name: aci-vnet
-        subnet-name: aci-subnet
-        ports: 3306
-        location: japanwest
-        environment-variables: MYSQL_ROOT_PASSWORD=somewordpress,MYSQL_DATABASE=wordpress,MYSQL_USER=wordpress,MYSQL_PASSWORD=wordpress
-        azure-file-volume-share-name: db-fileshare
-        azure-file-volume-account-name: odacontainerstorage
-        azure-file-volume-account-key: ${{ secrets.ASA_Key }}
-        azure-file-volume-mount-path: /var/lib/mysql
+    # DBコンテナのデプロイ    
+    - name: Deploy DB_Container to ACI
+      run: az container create
+          -g ${{ secrets.RESOURCE_GROUP }}
+          --name ${{ env.aci_db_name }}
+          --image ${{ env.db_image_name }}
+          --vnet aci-vnet
+          --subnet aci-subnet
+          --ports 3306
+          -e MYSQL_ROOT_PASSWORD=somewordpress MYSQL_DATABASE=wordpress MYSQL_USER=wordpress MYSQL_PASSWORD=wordpress
+          --azure-file-volume-share-name db-fileshare
+          --azure-file-volume-account-name odacontainerstorage
+          --azure-file-volume-account-key ${{ secrets.ASA_Key }}
+          --azure-file-volume-mount-path /var/lib/mysql
+
+    # DBコンテナのIP確認
+    - name: Set DB_Container IPAddress
+      id: db_ipaddress
+      run: |
+          db_ip=$(az container show -n ${{ env.aci_db_name }} -g ${{ secrets.RESOURCE_GROUP }} --query ipAddress.ip --output tsv)
+          echo "db_ip"
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "db_ip<<$EOF" >> $GITHUB_OUTPUT
+          echo "$db_ip" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+    # Appコンテナのデプロイ    
+    - name: Deploy App Container to ACI
+      run: az container create
+          -g ${{ secrets.RESOURCE_GROUP }}
+          --name ${{ env.aci_app_name }}
+          --image ${{ env.app_image_name }}
+          --vnet aci-vnet
+          --subnet aci-subnet
+          --ports 80
+          -e WORDPRESS_DB_HOST=${{steps.db_ipaddress.outputs.db_ip}}:3306 WORDPRESS_DB_USER=wordpress WORDPRESS_DB_PASSWORD=wordpress
+          --azure-file-volume-share-name app-fileshare
+          --azure-file-volume-account-name odacontainerstorage
+          --azure-file-volume-account-key ${{ secrets.ASA_Key }}
+          --azure-file-volume-mount-path /var/www/html
+
+    # AppコンテナのIP確認
+    - name: Set App_Container IPAddress
+      id: app_ipaddress
+      run: |
+          app_ip=$(az container show -n ${{ env.aci_app_name }} -g ${{ secrets.RESOURCE_GROUP }} --query ipAddress.ip --output tsv)
+          echo "$app_ip"
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "app_ip<<$EOF" >> $GITHUB_OUTPUT
+          echo "$app_ip" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+    # App GatewayのバックエンドIPの更新
+    - name: Update BackendIP
+      run: az network application-gateway address-pool update 
+        --gateway-name myAppGateway
+        -n appGatewayBackendPool
+        -g ${{ secrets.RESOURCE_GROUP }}
+        --servers ${{steps.app_ipaddress.outputs.app_ip}}
+
+    # Public IPの確認
+    - name: Show Public IPAddress
+      run: |
+          echo $(az network public-ip show -g ${{ secrets.RESOURCE_GROUP }} -n myAGPublicIPAddress --query [ipAddress] --output tsv)
